@@ -1611,6 +1611,211 @@ const getDefaultDateRange = () => {
     end: toInputDate(currentWeekEnd),
   };
 };
+
+type GuideMode =
+  | "GENERAL"
+  | "RESUMEN"
+  | "RENDIMIENTO"
+  | "ANALISIS"
+  | "INVENTARIO"
+  | "KPIS"
+  | "ALERTAS"
+  | "GERENTE";
+
+const GuideLayer = ({
+  guideActive,
+  currentSteps,
+  currentStepIndex,
+  onNext,
+  onPrev,
+  onClose,
+}: {
+  guideActive: boolean;
+  currentSteps: GuideStep[];
+  currentStepIndex: number;
+  onNext: () => void;
+  onPrev: () => void;
+  onClose: () => void;
+}) => {
+  if (!guideActive || currentSteps.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <GuideArrowOverlay
+        activeKey={currentSteps[currentStepIndex].targetKey}
+        placement={currentSteps[currentStepIndex].placement}
+      />
+      <GuideModal
+        isOpen={guideActive}
+        step={currentSteps[currentStepIndex]}
+        currentStepIndex={currentStepIndex}
+        totalSteps={currentSteps.length}
+        onNext={onNext}
+        onPrev={onPrev}
+        onClose={onClose}
+      />
+    </>
+  );
+};
+
+const HeaderToolbar = ({
+  chatOpen,
+  setChatOpen,
+  chatHelpOpen,
+  setChatHelpOpen,
+  showGuideMenu,
+  setShowGuideMenu,
+  showVideoMenu,
+  setShowVideoMenu,
+  onStartGuide,
+}: {
+  chatOpen: boolean;
+  setChatOpen: (value: boolean) => void;
+  chatHelpOpen: boolean;
+  setChatHelpOpen: (value: boolean) => void;
+  showGuideMenu: boolean;
+  setShowGuideMenu: (value: boolean) => void;
+  showVideoMenu: boolean;
+  setShowVideoMenu: (value: boolean) => void;
+  onStartGuide: (mode: GuideMode) => void;
+}) => (
+  <div className="flex flex-col gap-4">
+    <div className="flex items-center justify-between">
+      <h1 className="text-2xl font-bold text-orange-600">Panel del Gerente</h1>
+
+      <div data-guide="btn-chat-gerente">
+        <GerenteChatDialog
+          externalOpen={chatOpen}
+          onOpenChange={setChatOpen}
+          externalShowHelp={chatHelpOpen}
+          onHelpChange={setChatHelpOpen}
+        />
+      </div>
+    </div>
+
+    <div className="flex items-center gap-2">
+      <div className="relative inline-block text-left">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowGuideMenu(!showGuideMenu)}
+          className="flex items-center gap-2"
+        >
+          <BookOpen className="w-4 h-4" />
+          Guía Interactiva
+          <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
+        </Button>
+
+        {showGuideMenu && (
+          <div className="absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-white dark:bg-slate-900 z-50 p-1 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="py-1">
+              <button
+                onClick={() => onStartGuide("RESUMEN")}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+              >
+                📊 Resumen Mensual
+              </button>
+              <button
+                onClick={() => onStartGuide("RENDIMIENTO")}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+              >
+                📈 Rendimiento
+              </button>
+              <button
+                onClick={() => onStartGuide("ANALISIS")}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+              >
+                👥 Análisis Clientes
+              </button>
+              <button
+                onClick={() => onStartGuide("INVENTARIO")}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+              >
+                📦 Inventario
+              </button>
+              <button
+                onClick={() => onStartGuide("KPIS")}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+              >
+                💰 Datos Financieros
+              </button>
+              <button
+                onClick={() => onStartGuide("ALERTAS")}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded border-t mt-1"
+              >
+                🚨 Alertas y Sugerencias
+              </button>
+              <button
+                onClick={() => onStartGuide("GERENTE")}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded border-t mt-1"
+              >
+                🧑‍💼 Gerente Crov
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="relative inline-block text-left">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowVideoMenu(!showVideoMenu)}
+          className="flex items-center gap-2"
+        >
+          <Video className="w-4 h-4" />
+          Guía Rápida
+          <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
+        </Button>
+
+        {showVideoMenu && (
+          <div className="absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-white dark:bg-slate-900 z-50 p-1 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="py-1">
+              <button
+                onClick={() =>
+                  window.open(
+                    "https://www.youtube.com/watch?v=RlstVZSiRM4&list=PLQiB7q2hSscFQdcSdoDEs0xFSdPZjBIT-&index=12",
+                    "_blank",
+                  )
+                }
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+              >
+                <PlayCircle className="w-3 h-3 inline mr-2 text-red-500" /> Ver
+                Video Tutorial
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const TabsNavigation = () => (
+  <TabsList className="flex flex-wrap gap-2">
+    <TabsTrigger value="resumen" data-guide="tab-resumen">
+      Resumen Financiero Mensual
+    </TabsTrigger>
+    <TabsTrigger value="rendimiento" data-guide="tab-rendimiento">
+      Rendimiento Comercial y Proyecciones
+    </TabsTrigger>
+    <TabsTrigger value="analisis" data-guide="tab-analisis">
+      Análisis de Clientes y Productos
+    </TabsTrigger>
+    <TabsTrigger value="inventario" data-guide="tab-inventario">
+      Inventario e Indicadores Operativos
+    </TabsTrigger>
+    <TabsTrigger value="kpis" data-guide="tab-kpis">
+      Datos financieros
+    </TabsTrigger>
+    <TabsTrigger value="alertas" data-guide="tab-alertas">
+      Alertas y sugerencias
+    </TabsTrigger>
+  </TabsList>
+);
+
 export default function GerentePage() {
   // --- ESTADOS PARA LA GUÍA ---
   const [chatOpen, setChatOpen] = useState(false);
@@ -1624,17 +1829,7 @@ export default function GerentePage() {
   const [activeTab, setActiveTab] = useState("resumen"); // Necesario para controlar las pestañas
 
   // --- FUNCIONES DE LA GUÍA ---
-  const startGuide = (
-    mode:
-      | "GENERAL"
-      | "RESUMEN"
-      | "RENDIMIENTO"
-      | "ANALISIS"
-      | "INVENTARIO"
-      | "KPIS"
-      | "ALERTAS"
-      | "GERENTE",
-  ) => {
+  const startGuide = (mode: GuideMode) => {
     let steps = GUIDE_FLOW_RESUMEN;
     let targetTab = "resumen";
 
@@ -3461,145 +3656,26 @@ const [impactoDevoluciones, setImpactoDevoluciones] = useState<{
   //
   return (
     <div className="space-y-8 py-4 relative">
-      {/* 1. COMPONENTES DE LA GUÍA (Overlay y Modal) */}
-      {guideActive && currentSteps.length > 0 && (
-        <>
-          <GuideArrowOverlay
-            activeKey={currentSteps[currentStepIndex].targetKey}
-            placement={currentSteps[currentStepIndex].placement}
-          />
-          <GuideModal
-            isOpen={guideActive}
-            step={currentSteps[currentStepIndex]}
-            currentStepIndex={currentStepIndex}
-            totalSteps={currentSteps.length}
-            onNext={handleNextStep}
-            onPrev={handlePrevStep}
-            onClose={closeGuide}
-          />
-        </>
-      )}
+      <GuideLayer
+        guideActive={guideActive}
+        currentSteps={currentSteps}
+        currentStepIndex={currentStepIndex}
+        onNext={handleNextStep}
+        onPrev={handlePrevStep}
+        onClose={closeGuide}
+      />
 
-      {/* 2. HEADER: TÍTULO Y BARRA DE HERRAMIENTAS */}
-      <div className="flex flex-col gap-4">
-        {/* Fila Superior: Título y Chat */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-orange-600">
-            Panel del Gerente
-          </h1>
-
-          {/* Wrapper con data-guide para la flecha */}
-          <div data-guide="btn-chat-gerente">
-            <GerenteChatDialog
-              externalOpen={chatOpen}
-              onOpenChange={setChatOpen}
-              externalShowHelp={chatHelpOpen}
-              onHelpChange={setChatHelpOpen}
-            />
-          </div>
-        </div>
-
-        {/* Fila Inferior: Botones de Guías (Debajo del título) */}
-        <div className="flex items-center gap-2">
-          {/* A. Botón Guía Interactiva */}
-          <div className="relative inline-block text-left">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowGuideMenu(!showGuideMenu)}
-              className="flex items-center gap-2"
-            >
-              <BookOpen className="w-4 h-4" />
-              Guía Interactiva
-              <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
-            </Button>
-
-            {showGuideMenu && (
-              <div className="absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-white dark:bg-slate-900 z-50 p-1 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="py-1">
-                  {/* SE ELIMINÓ EL BOTÓN DE RECORRIDO GENERAL AQUÍ */}
-
-                  <button
-                    onClick={() => startGuide("RESUMEN")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    📊 Resumen Mensual
-                  </button>
-                  <button
-                    onClick={() => startGuide("RENDIMIENTO")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    📈 Rendimiento
-                  </button>
-                  <button
-                    onClick={() => startGuide("ANALISIS")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    👥 Análisis Clientes
-                  </button>
-                  <button
-                    onClick={() => startGuide("INVENTARIO")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    📦 Inventario
-                  </button>
-                  <button
-                    onClick={() => startGuide("KPIS")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    💰 Datos Financieros
-                  </button>
-                  <button
-                    onClick={() => startGuide("ALERTAS")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded border-t mt-1"
-                  >
-                    🚨 Alertas y Sugerencias
-                  </button>
-                  <button
-                    onClick={() => startGuide("GERENTE")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded border-t mt-1"
-                  >
-                    🧑‍💼 Gerente Crov
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* B. Botón Guía Rápida (Video) */}
-          <div className="relative inline-block text-left">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowVideoMenu(!showVideoMenu)}
-              className="flex items-center gap-2"
-            >
-              <Video className="w-4 h-4" />
-              Guía Rápida
-              <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
-            </Button>
-
-            {showVideoMenu && (
-              <div className="absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-white dark:bg-slate-900 z-50 p-1 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="py-1">
-                  <button
-                    onClick={() =>
-                      window.open(
-                        "https://www.youtube.com/watch?v=RlstVZSiRM4&list=PLQiB7q2hSscFQdcSdoDEs0xFSdPZjBIT-&index=12",
-                        "_blank",
-                      )
-                    }
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    <PlayCircle className="w-3 h-3 inline mr-2 text-red-500" />{" "}
-                    Ver Video Tutorial
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <HeaderToolbar
+        chatOpen={chatOpen}
+        setChatOpen={setChatOpen}
+        chatHelpOpen={chatHelpOpen}
+        setChatHelpOpen={setChatHelpOpen}
+        showGuideMenu={showGuideMenu}
+        setShowGuideMenu={setShowGuideMenu}
+        showVideoMenu={showVideoMenu}
+        setShowVideoMenu={setShowVideoMenu}
+        onStartGuide={startGuide}
+      />
 
       {/* 3. TABS PRINCIPALES */}
 
@@ -3608,26 +3684,7 @@ const [impactoDevoluciones, setImpactoDevoluciones] = useState<{
         onValueChange={setActiveTab}
         className="space-y-8"
       >
-        <TabsList className="flex flex-wrap gap-2">
-          <TabsTrigger value="resumen" data-guide="tab-resumen">
-            Resumen Financiero Mensual
-          </TabsTrigger>
-          <TabsTrigger value="rendimiento" data-guide="tab-rendimiento">
-            Rendimiento Comercial y Proyecciones
-          </TabsTrigger>
-          <TabsTrigger value="analisis" data-guide="tab-analisis">
-            Análisis de Clientes y Productos
-          </TabsTrigger>
-          <TabsTrigger value="inventario" data-guide="tab-inventario">
-            Inventario e Indicadores Operativos
-          </TabsTrigger>
-          <TabsTrigger value="kpis" data-guide="tab-kpis">
-            Datos financieros
-          </TabsTrigger>
-          <TabsTrigger value="alertas" data-guide="tab-alertas">
-            Alertas y sugerencias
-          </TabsTrigger>
-        </TabsList>
+        <TabsNavigation />
 
         {/* --- CONTENIDO: RESUMEN (Original) --- */}
         <TabsContent value="resumen" className="space-y-8">
