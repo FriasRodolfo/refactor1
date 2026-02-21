@@ -17,10 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import GuideArrowOverlay from "@/components/GuideArrows";
-import GuideModal, { GuideStep } from "@/components/GuideModal";
-import { BookOpen, ChevronDown, Video, PlayCircle } from "lucide-react";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { GuideStep } from "@/components/GuideModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +35,10 @@ import SimpleRadarChart, { SimpleRadarDatum,} from "@/components/SimpleRadarChar
 import WeeklyComparisonChart from "@/components/WeeklyComparisonChart";
 //import DailyComparisonChart from '@/components/DailyComparisonChart'
 
-import GerenteChatDialog from "@/components/GerenteChatDialog";
+import GuideLayer from "./GuideLayer";
+import HeaderToolbar, { GuideMode } from "./HeaderToolbar";
+import TabsNavigation from "./TabsNavigation";
+import PeriodFiltersCard from "./PeriodFiltersCard";
 
 import {
   TrendingUp,
@@ -53,9 +54,13 @@ import {
   Crown,
   Users,
   Lightbulb,
-  CalendarRange,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  buildMonthlyGrowthRows,
+  filterActiveItemsBySelectedWeeks,
+  filterItemsByPeriodAndWeeks,
+} from "./gerente.service";
 
 interface Venta {
   id: number;
@@ -1611,6 +1616,7 @@ const getDefaultDateRange = () => {
     end: toInputDate(currentWeekEnd),
   };
 };
+
 export default function GerentePage() {
   // --- ESTADOS PARA LA GUÍA ---
   const [chatOpen, setChatOpen] = useState(false);
@@ -1624,17 +1630,7 @@ export default function GerentePage() {
   const [activeTab, setActiveTab] = useState("resumen"); // Necesario para controlar las pestañas
 
   // --- FUNCIONES DE LA GUÍA ---
-  const startGuide = (
-    mode:
-      | "GENERAL"
-      | "RESUMEN"
-      | "RENDIMIENTO"
-      | "ANALISIS"
-      | "INVENTARIO"
-      | "KPIS"
-      | "ALERTAS"
-      | "GERENTE",
-  ) => {
+  const startGuide = (mode: GuideMode) => {
     let steps = GUIDE_FLOW_RESUMEN;
     let targetTab = "resumen";
 
@@ -2900,19 +2896,14 @@ const [impactoDevoluciones, setImpactoDevoluciones] = useState<{
   const shouldFilterByWeeks = selectedMonth !== "" && selectedWeeks.length > 0;
   const comparativaPeriodoFiltrada = useMemo(
     () =>
-      comparativaPeriodo.filter((item) => {
-        const matchesDateRange =
-          periodoStartTime === null || periodoEndTime === null
-            ? true
-            : item.rangeStartTime <= periodoEndTime &&
-              item.rangeEndTime >= periodoStartTime;
-        const matchesSelectedWeeks = shouldFilterByWeeks
-          ? item.monthKey === selectedMonth &&
-            selectedWeeksSet.has(item.weekIndex - 1)
-          : true;
-
-        return matchesDateRange && matchesSelectedWeeks;
-      }),
+      filterItemsByPeriodAndWeeks(
+        comparativaPeriodo,
+        periodoStartTime,
+        periodoEndTime,
+        selectedMonth,
+        selectedWeeksSet,
+        shouldFilterByWeeks,
+      ),
     [
       comparativaPeriodo,
       periodoEndTime,
@@ -2925,19 +2916,14 @@ const [impactoDevoluciones, setImpactoDevoluciones] = useState<{
 
   const gastosSemanalPeriodoFiltrado = useMemo(
     () =>
-      gastosSemanalPeriodo.filter((item) => {
-        const matchesDateRange =
-          periodoStartTime === null || periodoEndTime === null
-            ? true
-            : item.rangeStartTime <= periodoEndTime &&
-              item.rangeEndTime >= periodoStartTime;
-        const matchesSelectedWeeks = shouldFilterByWeeks
-          ? item.monthKey === selectedMonth &&
-            selectedWeeksSet.has(item.weekIndex - 1)
-          : true;
-
-        return matchesDateRange && matchesSelectedWeeks;
-      }),
+      filterItemsByPeriodAndWeeks(
+        gastosSemanalPeriodo,
+        periodoStartTime,
+        periodoEndTime,
+        selectedMonth,
+        selectedWeeksSet,
+        shouldFilterByWeeks,
+      ),
     [
       gastosSemanalPeriodo,
       periodoEndTime,
@@ -2950,19 +2936,14 @@ const [impactoDevoluciones, setImpactoDevoluciones] = useState<{
 
   const devolucionesSemanalPeriodoFiltrado = useMemo(
     () =>
-      devolucionesSemanalPeriodo.filter((item) => {
-        const matchesDateRange =
-          periodoStartTime === null || periodoEndTime === null
-            ? true
-            : item.rangeStartTime <= periodoEndTime &&
-              item.rangeEndTime >= periodoStartTime;
-        const matchesSelectedWeeks = shouldFilterByWeeks
-          ? item.monthKey === selectedMonth &&
-            selectedWeeksSet.has(item.weekIndex - 1)
-          : true;
-
-        return matchesDateRange && matchesSelectedWeeks;
-      }),
+      filterItemsByPeriodAndWeeks(
+        devolucionesSemanalPeriodo,
+        periodoStartTime,
+        periodoEndTime,
+        selectedMonth,
+        selectedWeeksSet,
+        shouldFilterByWeeks,
+      ),
     [
       devolucionesSemanalPeriodo,
       periodoEndTime,
@@ -2975,19 +2956,14 @@ const [impactoDevoluciones, setImpactoDevoluciones] = useState<{
 
   const ventasDescuentoSemanalFiltrado = useMemo(
     () =>
-      ventasDescuentoSemanal.filter((item) => {
-        const matchesDateRange =
-          periodoStartTime === null || periodoEndTime === null
-            ? true
-            : item.rangeStartTime <= periodoEndTime &&
-              item.rangeEndTime >= periodoStartTime;
-        const matchesSelectedWeeks = shouldFilterByWeeks
-          ? item.monthKey === selectedMonth &&
-            selectedWeeksSet.has(item.weekIndex - 1)
-          : true;
-
-        return matchesDateRange && matchesSelectedWeeks;
-      }),
+      filterItemsByPeriodAndWeeks(
+        ventasDescuentoSemanal,
+        periodoStartTime,
+        periodoEndTime,
+        selectedMonth,
+        selectedWeeksSet,
+        shouldFilterByWeeks,
+      ),
     [
       periodoEndTime,
       periodoStartTime,
@@ -3298,127 +3274,24 @@ const [impactoDevoluciones, setImpactoDevoluciones] = useState<{
   }, [kpisDia, kpisMes, kpisSemana]);
   //
 
-  const monthlyGrowthTableData = useMemo(() => {
-    // 1. Mapa para agrupar datos y rellenar huecos
-    const groups = new Map<
-      string,
-      {
-        dateObj: Date;
-        label: string;
-        ingresos: number;
-        gastos: number;
-      }
-    >();
-
-    // Generar esqueleto de fechas si hay rango seleccionado
-    if (fechaInicio && fechaFin) {
-      const start = new Date(parseDateInput(fechaInicio) || new Date());
-      const end = new Date(parseDateInput(fechaFin) || new Date());
-      start.setDate(1);
-      const current = new Date(start);
-
-      while (current <= end) {
-        const year = current.getFullYear();
-        const month = current.getMonth();
-        const key = `${year}-${String(month + 1).padStart(2, "0")}`;
-
-        groups.set(key, {
-          dateObj: new Date(current),
-          label: `${capitalize(current.toLocaleDateString("es-MX", { month: "long", timeZone: "UTC" }))} ${year}`,
-          ingresos: 0,
-          gastos: 0,
-        });
-        current.setMonth(current.getMonth() + 1);
-      }
-    }
-
-    const getMonthKey = (dateStr: string) => {
-      const d = new Date(dateStr);
-      const year = d.getUTCFullYear();
-      const month = d.getUTCMonth();
-      return `${year}-${String(month + 1).padStart(2, "0")}`;
-    };
-
-    // Llenar datos reales
-    ventasRaw.forEach((v) => {
-      if (!v.fecha) return;
-      if (v.activo === 0 || v.estado === "COTIZACION") return;
-      const key = getMonthKey(v.fecha);
-      if (groups.has(key)) groups.get(key)!.ingresos += Number(v.total || 0);
-    });
-
-    gastosRaw.forEach((g) => {
-      if (!g.fecha) return;
-      const key = getMonthKey(g.fecha);
-      if (groups.has(key)) groups.get(key)!.gastos += Number(g.monto || 0);
-    });
-
-    const sortedMonths = Array.from(groups.values()).sort(
-      (a, b) => a.dateObj.getTime() - b.dateObj.getTime(),
-    );
-
-    // CALCULO DE VARIACIÓN DE UTILIDAD
-    return sortedMonths.map((curr, index) => {
-      const utilidad = curr.ingresos - curr.gastos;
-      const isNegative = utilidad < 0; // Bandera: ¿Hubo pérdida este mes?
-
-      let variacion = 0;
-      let hasPrevious = false;
-
-      if (index > 0) {
-        const prev = sortedMonths[index - 1];
-        const prevUtilidad = prev.ingresos - prev.gastos;
-        hasPrevious = true;
-
-        // Fórmula financiera: (Actual - Anterior) / |Anterior|
-        if (prevUtilidad !== 0) {
-          variacion =
-            ((utilidad - prevUtilidad) / Math.abs(prevUtilidad)) * 100;
-        } else if (utilidad !== 0) {
-          variacion = utilidad > 0 ? 100 : -100; // De 0 a algo
-        }
-      }
-
-      return {
-        ...curr,
-        utilidad,
-        variacion,
-        hasPrevious,
-        isNegative, // Pasamos este dato a la tabla
-      };
-    });
-  }, [ventasRaw, gastosRaw, fechaInicio, fechaFin]);
+  const monthlyGrowthTableData = useMemo(
+    () =>
+      buildMonthlyGrowthRows(
+        ventasRaw,
+        gastosRaw,
+        fechaInicio,
+        fechaFin,
+        parseDateInput,
+        capitalize,
+      ),
+    [ventasRaw, gastosRaw, fechaInicio, fechaFin],
+  );
   //
   const currentMonthLabel = monthlyComparison?.current.label ?? "Mes actual";
   const previousMonthLabel =
     monthlyComparison?.previous.label ?? "Mes anterior";
-  const filterByWeeks = (items: any[]) => {
-    // Si no hay semanas seleccionadas, regresamos todo sin filtrar
-    if (selectedWeeks.length === 0) {
-      return items.filter(
-        (item) => item.activo !== 0 && item.estado !== "COTIZACION",
-      );
-    }
-    return items.filter((item) => {
-      // ✅ No procesar si es devolución o cotización
-      if (item.activo === 0 || item.estado === "COTIZACION") return false;
-
-      const dateVal = item.fecha || item.fecha_devolucion;
-      if (!dateVal) return false;
-      const date = new Date(dateVal);
-      // Ajuste simple para asegurar que tomamos el día correcto
-      const dayOfMonth = date.getUTCDate();
-
-      return selectedWeeks.some((weekIndex) => {
-        // Semana 0 (1ra): Días 1-7
-        // Semana 1 (2da): Días 8-14, etc.
-        const startDay = weekIndex * 7 + 1;
-        const endDay = weekIndex === 3 ? 31 : (weekIndex + 1) * 7;
-
-        return dayOfMonth >= startDay && dayOfMonth <= endDay;
-      });
-    });
-  };
+  const filterByWeeks = (items: any[]) =>
+    filterActiveItemsBySelectedWeeks(items, selectedWeeks);
 
   // Variables filtradas (Memorizadas para rendimiento)
   const ventasFiltradas = useMemo(
@@ -3461,145 +3334,26 @@ const [impactoDevoluciones, setImpactoDevoluciones] = useState<{
   //
   return (
     <div className="space-y-8 py-4 relative">
-      {/* 1. COMPONENTES DE LA GUÍA (Overlay y Modal) */}
-      {guideActive && currentSteps.length > 0 && (
-        <>
-          <GuideArrowOverlay
-            activeKey={currentSteps[currentStepIndex].targetKey}
-            placement={currentSteps[currentStepIndex].placement}
-          />
-          <GuideModal
-            isOpen={guideActive}
-            step={currentSteps[currentStepIndex]}
-            currentStepIndex={currentStepIndex}
-            totalSteps={currentSteps.length}
-            onNext={handleNextStep}
-            onPrev={handlePrevStep}
-            onClose={closeGuide}
-          />
-        </>
-      )}
+      <GuideLayer
+        guideActive={guideActive}
+        currentSteps={currentSteps}
+        currentStepIndex={currentStepIndex}
+        onNext={handleNextStep}
+        onPrev={handlePrevStep}
+        onClose={closeGuide}
+      />
 
-      {/* 2. HEADER: TÍTULO Y BARRA DE HERRAMIENTAS */}
-      <div className="flex flex-col gap-4">
-        {/* Fila Superior: Título y Chat */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-orange-600">
-            Panel del Gerente
-          </h1>
-
-          {/* Wrapper con data-guide para la flecha */}
-          <div data-guide="btn-chat-gerente">
-            <GerenteChatDialog
-              externalOpen={chatOpen}
-              onOpenChange={setChatOpen}
-              externalShowHelp={chatHelpOpen}
-              onHelpChange={setChatHelpOpen}
-            />
-          </div>
-        </div>
-
-        {/* Fila Inferior: Botones de Guías (Debajo del título) */}
-        <div className="flex items-center gap-2">
-          {/* A. Botón Guía Interactiva */}
-          <div className="relative inline-block text-left">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowGuideMenu(!showGuideMenu)}
-              className="flex items-center gap-2"
-            >
-              <BookOpen className="w-4 h-4" />
-              Guía Interactiva
-              <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
-            </Button>
-
-            {showGuideMenu && (
-              <div className="absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-white dark:bg-slate-900 z-50 p-1 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="py-1">
-                  {/* SE ELIMINÓ EL BOTÓN DE RECORRIDO GENERAL AQUÍ */}
-
-                  <button
-                    onClick={() => startGuide("RESUMEN")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    📊 Resumen Mensual
-                  </button>
-                  <button
-                    onClick={() => startGuide("RENDIMIENTO")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    📈 Rendimiento
-                  </button>
-                  <button
-                    onClick={() => startGuide("ANALISIS")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    👥 Análisis Clientes
-                  </button>
-                  <button
-                    onClick={() => startGuide("INVENTARIO")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    📦 Inventario
-                  </button>
-                  <button
-                    onClick={() => startGuide("KPIS")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    💰 Datos Financieros
-                  </button>
-                  <button
-                    onClick={() => startGuide("ALERTAS")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded border-t mt-1"
-                  >
-                    🚨 Alertas y Sugerencias
-                  </button>
-                  <button
-                    onClick={() => startGuide("GERENTE")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded border-t mt-1"
-                  >
-                    🧑‍💼 Gerente Crov
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* B. Botón Guía Rápida (Video) */}
-          <div className="relative inline-block text-left">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowVideoMenu(!showVideoMenu)}
-              className="flex items-center gap-2"
-            >
-              <Video className="w-4 h-4" />
-              Guía Rápida
-              <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
-            </Button>
-
-            {showVideoMenu && (
-              <div className="absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-white dark:bg-slate-900 z-50 p-1 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="py-1">
-                  <button
-                    onClick={() =>
-                      window.open(
-                        "https://www.youtube.com/watch?v=RlstVZSiRM4&list=PLQiB7q2hSscFQdcSdoDEs0xFSdPZjBIT-&index=12",
-                        "_blank",
-                      )
-                    }
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                  >
-                    <PlayCircle className="w-3 h-3 inline mr-2 text-red-500" />{" "}
-                    Ver Video Tutorial
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <HeaderToolbar
+        chatOpen={chatOpen}
+        setChatOpen={setChatOpen}
+        chatHelpOpen={chatHelpOpen}
+        setChatHelpOpen={setChatHelpOpen}
+        showGuideMenu={showGuideMenu}
+        setShowGuideMenu={setShowGuideMenu}
+        showVideoMenu={showVideoMenu}
+        setShowVideoMenu={setShowVideoMenu}
+        onStartGuide={startGuide}
+      />
 
       {/* 3. TABS PRINCIPALES */}
 
@@ -3608,147 +3362,22 @@ const [impactoDevoluciones, setImpactoDevoluciones] = useState<{
         onValueChange={setActiveTab}
         className="space-y-8"
       >
-        <TabsList className="flex flex-wrap gap-2">
-          <TabsTrigger value="resumen" data-guide="tab-resumen">
-            Resumen Financiero Mensual
-          </TabsTrigger>
-          <TabsTrigger value="rendimiento" data-guide="tab-rendimiento">
-            Rendimiento Comercial y Proyecciones
-          </TabsTrigger>
-          <TabsTrigger value="analisis" data-guide="tab-analisis">
-            Análisis de Clientes y Productos
-          </TabsTrigger>
-          <TabsTrigger value="inventario" data-guide="tab-inventario">
-            Inventario e Indicadores Operativos
-          </TabsTrigger>
-          <TabsTrigger value="kpis" data-guide="tab-kpis">
-            Datos financieros
-          </TabsTrigger>
-          <TabsTrigger value="alertas" data-guide="tab-alertas">
-            Alertas y sugerencias
-          </TabsTrigger>
-        </TabsList>
+        <TabsNavigation />
 
         {/* --- CONTENIDO: RESUMEN (Original) --- */}
         <TabsContent value="resumen" className="space-y-8">
-          <Card
-            className="border border-orange-200/60 bg-orange-50/50 shadow-sm"
-            data-guide="config-periodo"
-          >
-            <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <span className="rounded-full bg-white p-2 shadow-sm">
-                  <CalendarRange className="h-5 w-5 text-orange-500" />
-                </span>
-                <div>
-                  <CardTitle className="text-lg font-semibold text-orange-600">
-                    Configuración del periodo
-                  </CardTitle>
-                  <CardDescription>
-                    Ajusta el mes y las semanas para actualizar el resumen
-                    financiero.
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end">
-                <div
-                  className="flex flex-col gap-1 md:w-48"
-                  data-guide="input-fecha-inicio"
-                >
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Fecha inicio
-                  </span>
-                  <Input
-                    type="date"
-                    value={fechaInicio}
-                    max={fechaFin}
-                    onChange={(event) =>
-                      handleFechaInicioChange(event.target.value)
-                    }
-                  />
-                </div>
-                <div
-                  className="flex flex-col gap-1 md:w-48"
-                  data-guide="input-fecha-fin"
-                >
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Fecha fin
-                  </span>
-                  <Input
-                    type="date"
-                    value={fechaFin}
-                    min={fechaInicio}
-                    onChange={(event) =>
-                      handleFechaFinChange(event.target.value)
-                    }
-                  />
-                </div>
-
-                <div
-                  className="flex flex-col gap-1 md:w-60"
-                  data-guide="select-mes"
-                >
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Seleccionar mes
-                  </span>
-                  <Select
-                    value={selectedMonth}
-                    onValueChange={handleMonthSelect}
-                  >
-                    <SelectTrigger className="w-full bg-white border border-slate-200 shadow-sm transition-all hover:border-orange-300 focus:ring-2 focus:ring-orange-100">
-                      <SelectValue placeholder="Seleccionar periodo" />
-                    </SelectTrigger>
-                    <SelectContent
-                      className="bg-white border border-slate-100 shadow-xl rounded-lg z-[100] max-h-[250px] overflow-hidden"
-                      position="popper"
-                      side="bottom"
-                      align="start"
-                      sideOffset={5}
-                    >
-                      <div className="overflow-y-auto max-h-[240px] p-1 custom-scrollbar">
-                        {monthOptions.map((option) => (
-                          <SelectItem
-                            key={option.value}
-                            value={option.value}
-                            className="cursor-pointer rounded-md py-2 px-3 text-sm text-slate-600 focus:bg-orange-50 focus:text-orange-700 data-[state=checked]:bg-orange-50 data-[state=checked]:text-orange-800 data-[state=checked]:font-semibold transition-colors mb-1"
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </div>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div
-                  className="flex flex-col gap-1"
-                  data-guide="select-semanas"
-                >
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Semanas del mes
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {WEEK_OPTIONS.map((week) => (
-                      <Button
-                        key={week.value}
-                        type="button"
-                        variant={
-                          selectedWeeks.includes(week.value)
-                            ? "default"
-                            : "outline"
-                        }
-                        onClick={() => handleWeekSelect(week.value)}
-                      >
-                        {week.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <PeriodFiltersCard
+            fechaInicio={fechaInicio}
+            fechaFin={fechaFin}
+            selectedMonth={selectedMonth}
+            selectedWeeks={selectedWeeks}
+            monthOptions={monthOptions}
+            weekOptions={WEEK_OPTIONS}
+            onFechaInicioChange={handleFechaInicioChange}
+            onFechaFinChange={handleFechaFinChange}
+            onMonthSelect={handleMonthSelect}
+            onWeekSelect={handleWeekSelect}
+          />
 
           <div className="grid gap-6 lg:grid-cols-3">
             <Card
